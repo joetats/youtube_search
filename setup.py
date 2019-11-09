@@ -25,5 +25,5 @@ setup(
     ],
     packages=["youtube_search"],
     include_package_data=True,
-    install_requires=["requests", "beautiful-soup"],
+    install_requires=["requests", "beautifulsoup4"],
 )
