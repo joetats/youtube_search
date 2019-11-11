@@ -9,6 +9,7 @@ verify_ssl = true
 requests = "*"
 beautifulsoup4 = "*"
 twine = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.7"
