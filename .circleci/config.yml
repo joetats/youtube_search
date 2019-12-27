@@ -14,12 +14,14 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            sudo pip install pipenv
             pipenv shell
             pipenv install
       # Step 3: run linter and tests
       - run:
           name: run tests
           command: |
+            sudo pip install pipenv
             pipenv shell
             flake8 --statistics
             pytest -v --cov=youtube_search
