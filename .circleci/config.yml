@@ -14,14 +14,13 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            sudo pip install pipenv
-            pipenv shell
-            pipenv install
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
       # Step 3: run linter and tests
       - run:
           name: run tests
           command: |
-            sudo pip install pipenv
-            pipenv shell
-            flake8 --statistics
+            . venv/bin/activate
+            flake8 --exclude=venv* --statistics
             pytest -v --cov=youtube_search
