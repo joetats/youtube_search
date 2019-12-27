@@ -10,6 +10,8 @@ requests = "*"
 beautifulsoup4 = "*"
 twine = "*"
 flake8 = "*"
+pytest = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.7"
