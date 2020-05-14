@@ -27,7 +27,7 @@ class YoutubeSearch:
             video = video_div.select_one(".yt-uix-tile-link")
             if video != None:
                 if video["href"].startswith("/watch?v="):
-                    channel = video_div.select_one("a.spf-link")
+                    channel = video_div.select_one("a.spf-link")[1]
                     video_info = {
                         "title": video["title"],
                         "link": video["href"],
