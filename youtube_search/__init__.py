@@ -23,14 +23,19 @@ class YoutubeSearch:
 
     def parse_html(self, soup):
         results = []
-        for video in soup.select(".yt-uix-tile-link"):
-            if video["href"].startswith("/watch?v="):
-                video_info = {
-                    "title": video["title"],
-                    "link": video["href"],
-                    "id": video["href"][video["href"].index("=")+1:]
-                }
-                results.append(video_info)
+        for video_div in soup.select("div.yt-lockup-content"):
+            video = video_div.select_one(".yt-uix-tile-link")
+            if video != None:
+                if video["href"].startswith("/watch?v="):
+                    channel = video_div.select_one("a.spf-link")[1]
+                    video_info = {
+                        "title": video["title"],
+                        "link": video["href"],
+                        "id": video["href"][video["href"].index("=")+1:],
+                        "channel_name":channel.text,
+                        "channel_link":channel["href"]
+                    }
+                    results.append(video_info)
         return results
 
     def to_dict(self):
