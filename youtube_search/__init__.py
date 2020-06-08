@@ -18,8 +18,8 @@ class YoutubeSearch:
         response = BeautifulSoup(requests.get(url).text, "html.parser")
         results = self.parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
-            return results[:self.max_results]
-        return results
+            return self.get_more_data(results[:self.max_results])
+        return self.get_more_data(results)
 
     def parse_html(self, soup):
         results = []
@@ -43,3 +43,12 @@ class YoutubeSearch:
 
     def to_json(self):
         return json.dumps({"videos": self.videos})
+
+    def get_more_data(self, results):
+        for i in range(len(results)):
+            try:
+                res = requests.get("https://noembed.com/embed?url=http://www.youtube.com" + results[i]['link'])
+                results[i]['info'] = json.loads(res.text)
+            except:
+                results[i]['info'] = dict({})
+        return results
