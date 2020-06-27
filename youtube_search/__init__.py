@@ -6,9 +6,10 @@ import json
 
 class YoutubeSearch:
 
-    def __init__(self, search_terms: str, max_results=None):
+    def __init__(self, search_terms: str, max_results=None, noEmbedData=False):
         self.search_terms = search_terms
         self.max_results = max_results
+        self.noEmbedData = noEmbedData
         self.videos = self.search()
 
     def search(self):
@@ -18,8 +19,12 @@ class YoutubeSearch:
         response = BeautifulSoup(requests.get(url).text, "html.parser")
         results = self.parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
-            return self.get_more_data(results[:self.max_results])
-        return self.get_more_data(results)
+            if self.noEmbedData:
+                return self.get_more_data(results[:self.max_results])
+            return results[:self.max_results]
+        if self.noEmbedData:
+            return self.get_more_data(results)
+        return results
 
     def parse_html(self, soup):
         results = []
