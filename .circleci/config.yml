@@ -22,5 +22,5 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pip install pytest
+            pip install pytest pytest-cov
             pytest -v --cov=youtube_search
