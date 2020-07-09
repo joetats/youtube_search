@@ -4,7 +4,6 @@ import json
 
 
 class YoutubeSearch:
-
     def __init__(self, search_terms: str, max_results=None):
         self.search_terms = search_terms
         self.max_results = max_results
@@ -19,30 +18,40 @@ class YoutubeSearch:
             response = requests.get(url).text
         results = self.parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
-            return results[:self.max_results]
+            return results[: self.max_results]
         return results
 
     def parse_html(self, response):
         results = []
-        start = response.index('window["ytInitialData"]') + len('window["ytInitialData"]') + 3
-        end = response.index('};', start) + 1
+        start = (
+            response.index('window["ytInitialData"]')
+            + len('window["ytInitialData"]')
+            + 3
+        )
+        end = response.index("};", start) + 1
         json_str = response[start:end]
         data = json.loads(json_str)
 
-        videos = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
+        videos = data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"][
+            "sectionListRenderer"
+        ]["contents"][0]["itemSectionRenderer"]["contents"]
 
         for video in videos:
             res = {}
-            if 'videoRenderer' in video.keys():
-                video_data = video['videoRenderer']
-                res['id'] = video_data['videoId']
-                res['thumbnails'] = [thumb['url'] for thumb in video_data['thumbnail']['thumbnails']]
-                res['title'] = video_data['title']['runs'][0]['text']
-                res['long_desc'] = video_data['descriptionSnippet']['runs'][0]['text']
-                res['channel'] = video_data['longBylineText']['runs'][0]['text']
-                res['duration'] = video_data.get('lengthText', {}).get('simpleText', 0)
-                res['views'] = video_data.get('viewCountText', {}).get('simpleText', 0)
-                res['url_suffix'] = video_data['navigationEndpoint']['commandMetadata']['webCommandMetadata']['url']
+            if "videoRenderer" in video.keys():
+                video_data = video["videoRenderer"]
+                res["id"] = video_data["videoId"]
+                res["thumbnails"] = [
+                    thumb["url"] for thumb in video_data["thumbnail"]["thumbnails"]
+                ]
+                res["title"] = video_data["title"]["runs"][0]["text"]
+                res["long_desc"] = video_data["descriptionSnippet"]["runs"][0]["text"]
+                res["channel"] = video_data["longBylineText"]["runs"][0]["text"]
+                res["duration"] = video_data.get("lengthText", {}).get("simpleText", 0)
+                res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
+                res["url_suffix"] = video_data["navigationEndpoint"]["commandMetadata"][
+                    "webCommandMetadata"
+                ]["url"]
                 results.append(res)
         return results
 
