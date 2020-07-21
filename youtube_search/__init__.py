@@ -39,19 +39,15 @@ class YoutubeSearch:
         for video in videos:
             res = {}
             if "videoRenderer" in video.keys():
-                video_data = video["videoRenderer"]
-                res["id"] = video_data["videoId"]
-                res["thumbnails"] = [
-                    thumb["url"] for thumb in video_data["thumbnail"]["thumbnails"]
-                ]
-                res["title"] = video_data["title"]["runs"][0]["text"]
-                res["long_desc"] = video_data["descriptionSnippet"]["runs"][0]["text"]
-                res["channel"] = video_data["longBylineText"]["runs"][0]["text"]
+                video_data = video.get("videoRenderer", {})
+                res["id"] = video_data.get("videoId", None)
+                res["thumbnails"] = [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ]
+                res["title"] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
+                res["long_desc"] = video_data.get("descriptionSnippet", {}).get("runs", [{}])[0].get("text", None)
+                res["channel"] = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", None)
                 res["duration"] = video_data.get("lengthText", {}).get("simpleText", 0)
-                res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
-                res["url_suffix"] = video_data["navigationEndpoint"]["commandMetadata"][
-                    "webCommandMetadata"
-                ]["url"]
+                res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0) 
+                res["url_suffix"] = video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
                 results.append(res)
         return results
 
