@@ -11,9 +11,6 @@ For a basic search (and all of the current functionality), you can use the searc
 ```python
 from youtube_search import YoutubeSearch
 
-```python
-from youtube_search-fork import YoutubeSearch
-
 videos = YoutubeSearch('search terms', max_results=10).videos_to_json()
 
 channels = YoutubeSearch('search terms', max_results=10).channels_to_json()
