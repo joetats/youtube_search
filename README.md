@@ -10,12 +10,12 @@ To avoid using the API, this uses the form on the youtube homepage and scrapes t
 
 For a basic search (and all of the current functionality), you can use the search tool as follows:
 
-```pip install youtube-search```
-
 ```python
-from youtube_search import YoutubeSearch
+from youtube_search-fork import YoutubeSearch
 
-results = YoutubeSearch('search terms', max_results=10).to_json()
+videos = YoutubeSearch('search terms', max_results=10).videos_to_json()
+
+channels = YoutubeSearch('search terms', max_results=10).channels_to_json()
 
 print(results)
 
@@ -23,8 +23,11 @@ print(results)
 
 ########################################
 
-results = YoutubeSearch('search terms', max_results=10).to_dict()
+videos = YoutubeSearch('search terms', max_results=10).videos_to_dict()
+channels = YoutubeSearch('search terms', max_results=10).channels_to_dict()
 
 print(results)
-# returns a dictionary
+# returns a dictionary like this:
+[{'id': 'UCJWCJC...CieLOLQ', 'name': 'channelName', 'suscriberCountText': '200.000', 'thumbnails': ['URL1', 'URL2'], 'url_suffix': '/user/channelName'}]
+
 ```
