@@ -1,4 +1,6 @@
-# youtube_search
+# youtube_search-fork
+
+This fork adds support for searching Youtube Channels and Videos. Also adds the published date parameter to videos.
 
 Python function for searching for youtube videos to avoid using their heavily rate-limited API
 
