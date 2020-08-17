@@ -12,7 +12,6 @@ For a basic search (and all of the current functionality), you can use the searc
 from youtube_search import YoutubeSearch
 
 videos = YoutubeSearch('search terms', max_results=10).videos_to_json()
-
 channels = YoutubeSearch('search terms', max_results=10).channels_to_json()
 
 print(results)
