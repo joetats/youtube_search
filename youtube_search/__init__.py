@@ -14,7 +14,7 @@ class YoutubeSearch:
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={encoded_search}"
         response = requests.get(url).text
-        while 'window["ytInitialData"]' not in response:
+        while 'ytInitialData' not in response:
             response = requests.get(url).text
         results = self.parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
@@ -24,8 +24,8 @@ class YoutubeSearch:
     def parse_html(self, response):
         results = []
         start = (
-            response.index('window["ytInitialData"]')
-            + len('window["ytInitialData"]')
+            response.index('ytInitialData')
+            + len('ytInitialData')
             + 3
         )
         end = response.index("};", start) + 1
