@@ -20,3 +20,11 @@ class TestSearch:
     def test_json(self):
         search = YoutubeSearch('test', max_results=10)
         assert isinstance(search.to_json(), str)
+
+    def test_clear_cache(self):
+        search = YoutubeSearch('test', max_results=10)
+        json_output = search.to_json(clear_cache=False)
+        assert "" != search.videos
+
+        dict_output = search.to_dict()
+        assert "" == search.videos

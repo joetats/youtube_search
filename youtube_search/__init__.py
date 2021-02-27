@@ -7,21 +7,21 @@ class YoutubeSearch:
     def __init__(self, search_terms: str, max_results=None):
         self.search_terms = search_terms
         self.max_results = max_results
-        self.videos = self.search()
+        self.videos = self._search()
 
-    def search(self):
-        encoded_search = urllib.parse.quote(self.search_terms)
+    def _search(self):
+        encoded_search = urllib.parse.quote_plus(self.search_terms)
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={encoded_search}"
         response = requests.get(url).text
         while "ytInitialData" not in response:
             response = requests.get(url).text
-        results = self.parse_html(response)
+        results = self._parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
             return results[: self.max_results]
         return results
 
-    def parse_html(self, response):
+    def _parse_html(self, response):
         results = []
         start = (
             response.index("ytInitialData")
@@ -52,8 +52,14 @@ class YoutubeSearch:
                 results.append(res)
         return results
 
-    def to_dict(self):
-        return self.videos
+    def to_dict(self, clear_cache=True):
+        result = self.videos
+        if clear_cache:
+            self.videos = ""
+        return result
 
-    def to_json(self):
-        return json.dumps({"videos": self.videos})
+    def to_json(self, clear_cache=True):
+        result = json.dumps({"videos": self.videos})
+        if clear_cache:
+            self.videos = ""
+        return result
