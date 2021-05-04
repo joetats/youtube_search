@@ -49,6 +49,7 @@ class YoutubeSearch:
                 res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
                 res["publish_time"] = video_data.get("publishedTimeText", {}).get("simpleText", 0)
                 res["url_suffix"] = video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
+                res["owner_url"] = video_data.get("ownerText",{}).get("runs", [{}])[0].get("navigationEndpoint", {}).get('commandMetadata',{}).get('webCommandMetadata',{}).get('url',None)
                 results.append(res)
         return results
 
