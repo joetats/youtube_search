@@ -28,7 +28,7 @@ class YoutubeSearch:
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={encoded_search}"
 
-        response = requests.get(url).text
+        response = self.session.get(url).text
         while "ytInitialData" not in response:
             response = self.session.get(url).text
         results = self._parse_html(response)
