@@ -4,18 +4,33 @@ import json
 
 
 class YoutubeSearch:
-    def __init__(self, search_terms: str, max_results=None):
+    def __init__(self, search_terms: str, max_results=None, language=None, region=None):
+        self.session = requests.Session()
         self.search_terms = search_terms
         self.max_results = max_results
+        self.language = language
+        self.region = region
+        if self.language:
+            language = f"hl={self.language}"
+        if self.region:
+            region = f"gl={self.region}"
+        # Join the language and region params if they exist with a &
+        pref = "&".join(filter(None, [language, region]))
+        self.session.cookies.set(
+            "PREF", 
+            pref, 
+            domain=".youtube.com"
+        )
         self.videos = self._search()
 
     def _search(self):
         encoded_search = urllib.parse.quote_plus(self.search_terms)
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={encoded_search}"
+
         response = requests.get(url).text
         while "ytInitialData" not in response:
-            response = requests.get(url).text
+            response = self.session.get(url).text
         results = self._parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
             return results[: self.max_results]
