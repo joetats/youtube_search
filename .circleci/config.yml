@@ -1,4 +1,4 @@
-# Python CircleCI 2.0 configuration file
+# Python CircleCI configuration file
 version: 2
 jobs:
   build:
