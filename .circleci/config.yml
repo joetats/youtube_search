@@ -1,9 +1,9 @@
-# Python CircleCI 2.0 configuration file
+# Python CircleCI configuration file
 version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
 
     working_directory: ~/repo
 
