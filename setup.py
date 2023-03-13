@@ -10,7 +10,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="youtube-search",
-    version="2.1.2",
+    version="2.2.0",
     description="Perform YouTube video searches without the API",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -26,5 +26,5 @@ setup(
     ],
     packages=["youtube_search"],
     include_package_data=True,
-    install_requires=["requests"],
+    install_requires=["requests", "aiohttp"],
 )
