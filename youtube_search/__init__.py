@@ -117,7 +117,7 @@ class YoutubeSearch:
                     res["id"] = video_data.get("videoId", None)
                     res["thumbnails"] = [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ]
                     res["title"] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
-                    res["desc_snippet"] = unicode_normalize("NFKD", "".join([item.get("text") for item in video_data.get("detailedMetadataSnippets", [{}])[0].get("snippetText", {}).get("runs", [{}])]))
+                    res["desc_snippet"] = unicode_normalize("NFKD", "".join([item.get("text", "") for item in video_data.get("detailedMetadataSnippets", [{}])[0].get("snippetText", {}).get("runs", [{}])]))
                     res["channel"] = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", None)
                     res["duration"] = video_data.get("lengthText", {}).get("simpleText", 0)
                     res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
@@ -265,7 +265,7 @@ class AsyncYoutubeSearch:
             "id" : video_data.get("videoId", None),
             "thumbnails": [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ],
             "title": video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None),
-            "desc_snippet": unicode_normalize("NFKD", "".join([item.get("text") for item in video_data.get("detailedMetadataSnippets", [{}])[0].get("snippetText", {}).get("runs", [{}])])),
+            "desc_snippet": unicode_normalize("NFKD", "".join([item.get("text", "") for item in video_data.get("detailedMetadataSnippets", [{}])[0].get("snippetText", {}).get("runs", [{}])])),
             "channel": video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", None),
             "duration": video_data.get("lengthText", {}).get("simpleText", 0),
             "views": video_data.get("viewCountText", {}).get("simpleText", 0),
