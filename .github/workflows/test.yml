@@ -1,0 +1,30 @@
+name: Package test
+
+on:
+  push:
+    branches: [ master , dev ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.8"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Check with pylint
+      run: |
+        pip install pylint
+        pylint youtube_search/__init__.py -E
+    - name: Install the module
+      run: python setup.py install
+    - name: Run test
+      run: python test_search.py

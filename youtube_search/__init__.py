@@ -1,34 +1,100 @@
+#pylint: disable=line-too-long
+"""
+Module to search videos on youtuve
+"""
+
+from copy import copy
 from typing import Optional
-import json
+from platform import system
 import asyncio
-import aiohttp
+import json
+from aiohttp import ClientSession
 from requests.utils import quote
 import requests
+
+if system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 BASE_URL = "https://youtube.com"
 
 def url_encode(url: str) -> str:
+    """Encode url"""
     return quote(url).replace("%20", "+")
 
 class YoutubeSearch:
-    def __init__(self, search_terms: str, max_results=None):
-        self.search_terms = search_terms
-        self.max_results = max_results
-        self.__videos = self._search()
+    """
+    Entry point class for youtube searching
+    """
+    def __init__(self, search_query: str, max_results: int=20, timeout: Optional[int]=None, language: Optional[str]=None, region: Optional[str]=None) -> None:
+        """
+        Parameters
+        ----------
+        search_query : str
+            The search query
+        max_results : int, default 20
+            The maximum result that will be returned
+        timeout : Optional[int]
+            The request timeout in seconds
+        language : Optional[str]
+            Youtube language
+        region : Optional[str]
+            Youtube region
 
-    def _search(self):
-        encoded_search = url_encode(self.search_terms)
-        url = f"{BASE_URL}/results?search_query={encoded_search}"
-        response = requests.get(url).text
-        while "ytInitialData" not in response:
-            response = requests.get(url).text
-        results = self._parse_html(response)
-        if self.max_results is not None and len(results) > self.max_results:
-            return results[: self.max_results]
-        return results
+        Return
+        ------
+        None
+        """
+        if max_results is not None and max_results < 0:
+            raise ValueError("Max result must be a whole number")
+        self.__cookies={"PREF": f"hl={language}&gl={region}", "domain": ".youtube.com"}
+        self.__search_query = search_query
+        self.__max_results = max_results
+        self.__timeout=timeout
+        self.__videos = []
 
-    def _parse_html(self, response):
-        results = []
+    @property
+    def count(self) -> int:
+        """
+        Return how many results are in the list
+        """
+        return len(self.__videos)
+
+    @property
+    def max_results(self) -> int:
+        """
+        Return max results
+        """
+        return self.__max_results
+
+    def fetch(self):
+        """
+        Get the list of searched videos
+
+        Return
+        ------
+        YoutubeSearch:
+            YoutubeSearch object
+        """
+        encoded_query = url_encode(self.__search_query)
+        url = f"{BASE_URL}/results?search_query={encoded_query}"
+        response = requests.get(url, timeout=self.__timeout, cookies=self.__cookies).text
+        self.__parse_html(response)
+        return self
+
+    def __parse_html(self, response: str) -> list: #pylint: disable=used-before-assignment
+        """
+        Parse the html response to get the videos
+
+        Parameters
+        ----------
+        response: str
+            The html response
+
+        Return
+        ------
+        list:
+            The list of videos
+        """
         start = (
             response.index("ytInitialData")
             + len("ytInitialData")
@@ -39,9 +105,13 @@ class YoutubeSearch:
         data = json.loads(json_str)
 
         for contents in data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]["sectionListRenderer"]["contents"]:
+            if "itemSectionRenderer" not in contents:
+                continue
             for video in contents["itemSectionRenderer"]["contents"]:
+                if len(self.__videos) == self.__max_results:
+                    return
                 res = {}
-                if "videoRenderer" in video.keys():
+                if "videoRenderer" in video:
                     video_data = video.get("videoRenderer", {})
                     res["id"] = video_data.get("videoId", None)
                     res["thumbnails"] = [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ]
@@ -52,60 +122,121 @@ class YoutubeSearch:
                     res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
                     res["publish_time"] = video_data.get("publishedTimeText", {}).get("simpleText", 0)
                     res["url_suffix"] = video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
-                    results.append(res)
-            if results:
-                return results
-        return results
+                    self.__videos.append(res)
 
-    def to_dict(self, clear_cache=True):
-        result = self.__videos
+    def list(self, clear_cache: bool=True) -> list:
+        """
+        Return the list of videos
+
+        Parameters
+        ----------
+        clear_cache: bool, default True
+            Clear the result cache
+
+        Return
+        ------
+        list:
+            The list of videos
+        """
         if clear_cache:
-            self.__videos=""
-        return result
+            result=copy(self.__videos)
+            self.__videos.clear()
+            return result
+        return self.__videos
 
-    def to_json(self, clear_cache=True):
+    def json_string(self, clear_cache=True):
+        """
+        Convert the result into json string
+
+        Parameters
+        ----------
+        clear_cache: bool, default True
+            Clear the result cache
+
+        Return
+        ------
+        str:
+            The json string
+        """
         result = json.dumps({"videos": self.__videos})
         if clear_cache:
-            self.__videos=""
+            self.__videos.clear()
         return result
 
 class AsyncYoutubeSearch:
     """
     Entry point class for youtube searching
     """
-    def __init__(self, search_query: str, max_results: Optional[int]=None):
+    def __init__(self, search_query: str, max_results: int=20, timeout: Optional[int]=None, language: Optional[str]=None, region: Optional[str]=None) -> None:
         """
         Parameters
         ----------
         search_query : str
             The search query
-        max_results : Optional[int]
+        max_results : int, default 20
             The maximum result that will be returned
+        timeout : Optional[int]
+            The request timeout in seconds
+        language : Optional[str]
+            Youtube language
+        region : Optional[str]
+            Youtube region
+
+        Return
+        ------
+        None
         """
-        if max_results is not None and max_results < 0:
+        if max_results is None or max_results < 0:
             raise ValueError("Max result must be a whole number")
-        self.__query=search_query
+        self.__cookies={"PREF": f"hl={language}&gl={region}"}
         self.__max_results=max_results
+        self.__query=search_query
+        self.__timeout=timeout
         self.__videos=[]
 
-    async def result(self, clean_cache=False) -> list:
-        if self.__videos:
-            temp_val=self.__videos
-            if clean_cache:
-                self.__videos.clear()
-            return temp_val
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f"{BASE_URL}/results?search_query={url_encode(self.__query)}") as resp:
-                response_body=await resp.text()
-                while "ytInitialData" not in response_body:
-                    response_body = await resp.text()
-        result=self._parse_html(response_body)
-        if not clean_cache:
-            self.__videos=result
-        return result
+    @property
+    def count(self) -> int:
+        """
+        Return how many results are in the list
+        """
+        return len(self.__videos)
 
-    def _parse_html(self, response):
-        results = []
+    @property
+    def max_results(self) -> int:
+        """
+        Return max results
+        """
+        return self.__max_results
+
+    async def fetch(self):
+        """
+        Fetch and parse the youtube search html
+
+        Return
+        ------
+        ExperimentalYoutubeSearch:
+            ExperimentYoutubeSearch object
+        """
+        async with ClientSession(cookies=self.__cookies) as session:
+            async with session.get(f"{BASE_URL}/results?search_query={url_encode(self.__query)}", timeout=self.__timeout) as resp:
+                response_body=await resp.text()
+        await self.__parse_html(response_body)
+        return self
+
+    async def __parse_html(self, response: str) -> list: #pylint: disable=used-before-assignment
+        """
+        Parse the html response to get the videos
+
+        Parameters
+        ----------
+        response: str
+            The html response
+
+        Return
+        ------
+        list:
+            The list of videos
+        """
         start = (
             response.index("ytInitialData")
             + len("ytInitialData")
@@ -115,28 +246,66 @@ class AsyncYoutubeSearch:
         json_str = response[start:end]
         data = json.loads(json_str)
 
+        tasks=[]
         for contents in data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]["sectionListRenderer"]["contents"]:
-            for video in contents["itemSectionRenderer"]["contents"]:
-                if len(results) == self.__max_results:
-                    return results
-                res = {}
-                if "videoRenderer" in video.keys():
-                    video_data = video.get("videoRenderer", {})
-                    res["id"] = video_data.get("videoId", None)
-                    res["thumbnails"] = [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ]
-                    res["title"] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
-                    res["long_desc"] = video_data.get("descriptionSnippet", {}).get("runs", [{}])[0].get("text", None)
-                    res["channel"] = video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", None)
-                    res["duration"] = video_data.get("lengthText", {}).get("simpleText", 0)
-                    res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
-                    res["publish_time"] = video_data.get("publishedTimeText", {}).get("simpleText", 0)
-                    res["url_suffix"] = video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
-                    results.append(res)
-            if results:
-                return results
-        return results
+            if "itemSectionRenderer" not in contents:
+                continue
+            tasks.extend([self.__assign_to_list(video) for video in contents["itemSectionRenderer"]["contents"] if "videoRenderer" in video])
+        await asyncio.gather(*tasks)
 
-    def to_json(self, clear_cache=True):
+    async def __assign_to_list(self, video):
+        """
+        Assign video data to video list
+        """
+        if len(self.__videos) >= self.__max_results:
+            return
+        video_data = video.get("videoRenderer", {})
+        self.__videos.append({
+            "id" : video_data.get("videoId", None),
+            "thumbnails": [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ],
+            "title": video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None),
+            "long_desc": video_data.get("descriptionSnippet", {}).get("runs", [{}])[0].get("text", None),
+            "channel": video_data.get("longBylineText", {}).get("runs", [[{}]])[0].get("text", None),
+            "duration": video_data.get("lengthText", {}).get("simpleText", 0),
+            "views": video_data.get("viewCountText", {}).get("simpleText", 0),
+            "publish_time": video_data.get("publishedTimeText", {}).get("simpleText", 0),
+            "url_suffix": video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
+        })
+
+    def list(self, clear_cache: bool=True) -> list:
+        """
+        Return the list of videos
+
+        Parameters
+        ----------
+        clear_cache: bool, default True
+            Clear the result cache
+
+        Return
+        ------
+        list:
+            The list of videos
+        """
+        if clear_cache:
+            result=copy(self.__videos)
+            self.__videos.clear()
+            return result
+        return self.__videos
+
+    def json_string(self, clear_cache: bool=True) -> str:
+        """
+        Convert the result into json string
+
+        Parameters
+        ----------
+        clear_cache: bool, default True
+            Clear the result cache
+
+        Return
+        ------
+        str:
+            The json string
+        """
         result = json.dumps({"videos": self.__videos})
         if clear_cache:
             self.__videos.clear()
