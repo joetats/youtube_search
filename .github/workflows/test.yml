@@ -2,7 +2,7 @@ name: Package test
 
 on:
   push:
-    branches: [ master , dev ]
+    branches: [ master , dev , dev-feature ]
 
 permissions:
   contents: read
