@@ -26,7 +26,7 @@ class YoutubeSearch:
     """
     Entry point class for youtube searching
     """
-    def __init__(self, search_query: str, max_results: int=20, timeout: Optional[int]=None, language: Optional[str]=None, region: Optional[str]=None) -> None:
+    def __init__(self, search_query: str, max_results: int=20, language: Optional[str]=None, region: Optional[str]=None) -> None:
         """
         Parameters
         ----------
@@ -34,8 +34,6 @@ class YoutubeSearch:
             The search query
         max_results : int, default 20
             The maximum result that will be returned
-        timeout : Optional[int]
-            The request timeout in seconds
         language : Optional[str]
             Youtube language
         region : Optional[str]
@@ -50,7 +48,6 @@ class YoutubeSearch:
         self.__cookies={"PREF": f"hl={language}&gl={region}", "domain": ".youtube.com"}
         self.__search_query = search_query
         self.__max_results = max_results
-        self.__timeout=timeout
         self.__videos = []
 
     @property
@@ -67,9 +64,14 @@ class YoutubeSearch:
         """
         return self.__max_results
 
-    def fetch(self):
+    def fetch(self, **kwargs):
         """
         Get the list of searched videos
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments will be passed to aiohttp get
 
         Return
         ------
@@ -78,7 +80,7 @@ class YoutubeSearch:
         """
         encoded_query = url_encode(self.__search_query)
         url = f"{BASE_URL}/results?search_query={encoded_query}"
-        response = requests.get(url, timeout=self.__timeout, cookies=self.__cookies).text
+        response = requests.get(url, cookies=self.__cookies, **kwargs).text
         self.__parse_html(response)
         return self
 
@@ -114,6 +116,7 @@ class YoutubeSearch:
                 res = {}
                 if "videoRenderer" in video:
                     video_data = video.get("videoRenderer", {})
+                    owner_url_suffix=video_data.get("ownerText", {}).get("runs", [{}])[0].get("navigationEndpoint", {}).get("browseEndpoint", {}).get("canonicalBaseUrl")
                     res["id"] = video_data.get("videoId", None)
                     res["thumbnails"] = [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ]
                     res["title"] = video_data.get("title", {}).get("runs", [[{}]])[0].get("text", None)
@@ -123,6 +126,8 @@ class YoutubeSearch:
                     res["views"] = video_data.get("viewCountText", {}).get("simpleText", 0)
                     res["publish_time"] = video_data.get("publishedTimeText", {}).get("simpleText", 0)
                     res["url_suffix"] = video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
+                    res["owner_url"] = f"{BASE_URL}{owner_url_suffix}"
+                    res["owner_name"] = video_data.get("ownerText", {}).get("runs", [{}])[0].get("text")
                     self.__videos.append(res)
 
     def list(self, clear_cache: bool=True) -> list:
@@ -168,7 +173,7 @@ class AsyncYoutubeSearch:
     """
     Entry point class for youtube searching
     """
-    def __init__(self, search_query: str, max_results: int=20, timeout: Optional[int]=None, language: Optional[str]=None, region: Optional[str]=None) -> None:
+    def __init__(self, search_query: str, max_results: int=20, language: Optional[str]=None, region: Optional[str]=None) -> None:
         """
         Parameters
         ----------
@@ -176,8 +181,6 @@ class AsyncYoutubeSearch:
             The search query
         max_results : int, default 20
             The maximum result that will be returned
-        timeout : Optional[int]
-            The request timeout in seconds
         language : Optional[str]
             Youtube language
         region : Optional[str]
@@ -192,7 +195,6 @@ class AsyncYoutubeSearch:
         self.__cookies={"PREF": f"hl={language}&gl={region}"}
         self.__max_results=max_results
         self.__query=search_query
-        self.__timeout=timeout
         self.__videos=[]
 
     @property
@@ -209,17 +211,26 @@ class AsyncYoutubeSearch:
         """
         return self.__max_results
 
-    async def fetch(self):
+    async def fetch(self, proxies: Optional[dict]=None, **kwargs):
         """
         Fetch and parse the youtube search html
 
+        Parameters
+        ----------
+        proxies: Optional[dict]
+            Proxies like {'https': 127.0.0.1, 'http': 127.0.0.1}
+        **kwargs
+            Keyword arguments will be passed to aiohttp get
+
         Return
         ------
-        ExperimentalYoutubeSearch:
-            ExperimentYoutubeSearch object
+        AsyncYoutubeSearch:
+            AsyncYoutubeSearch object
         """
+        if proxies: # Compatibility for http proxy (In case user passed proxy as same as the requests module format)
+            kwargs['proxy']=kwargs['proxies'].get("http", "")
         async with ClientSession(cookies=self.__cookies) as session:
-            async with session.get(f"{BASE_URL}/results?search_query={url_encode(self.__query)}", timeout=self.__timeout) as resp:
+            async with session.get(f"{BASE_URL}/results?search_query={url_encode(self.__query)}", **kwargs) as resp:
                 response_body=await resp.text()
         await self.__parse_html(response_body)
         return self
@@ -261,6 +272,7 @@ class AsyncYoutubeSearch:
         if len(self.__videos) >= self.__max_results:
             return
         video_data = video.get("videoRenderer", {})
+        owner_url_suffix=video_data.get("ownerText", {}).get("runs", [{}])[0].get("navigationEndpoint", {}).get("browseEndpoint", {}).get("canonicalBaseUrl")
         self.__videos.append({
             "id" : video_data.get("videoId", None),
             "thumbnails": [thumb.get("url", None) for thumb in video_data.get("thumbnail", {}).get("thumbnails", [{}]) ],
@@ -270,7 +282,9 @@ class AsyncYoutubeSearch:
             "duration": video_data.get("lengthText", {}).get("simpleText", 0),
             "views": video_data.get("viewCountText", {}).get("simpleText", 0),
             "publish_time": video_data.get("publishedTimeText", {}).get("simpleText", 0),
-            "url_suffix": video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None)
+            "url_suffix": video_data.get("navigationEndpoint", {}).get("commandMetadata", {}).get("webCommandMetadata", {}).get("url", None),
+            "owner_url": f"{BASE_URL}{owner_url_suffix}",
+            "owner_name": video_data.get("ownerText", {}).get("runs", [{}])[0].get("text")
         })
 
     def list(self, clear_cache: bool=True) -> list:
