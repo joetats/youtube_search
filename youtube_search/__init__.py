@@ -4,18 +4,26 @@ import json
 
 
 class YoutubeSearch:
-    def __init__(self, search_terms: str, max_results=None):
+    def __init__(self, search_terms: str, max_results=None, proxy={}, retries=3, timeout=10):
         self.search_terms = search_terms
         self.max_results = max_results
+        self.proxy = proxy
+        self.retries = retries
+        self.timeout = timeout
         self.videos = self._search()
 
     def _search(self):
         encoded_search = urllib.parse.quote_plus(self.search_terms)
         BASE_URL = "https://youtube.com"
         url = f"{BASE_URL}/results?search_query={encoded_search}"
-        response = requests.get(url).text
-        while "ytInitialData" not in response:
-            response = requests.get(url).text
+        
+        attempts = 1
+        response = requests.get(url, proxies=self.proxy, timeout=self.timeout).text
+
+        while "ytInitialData" not in response and attempts <= self.retries:
+            response = requests.get(url, proxies=self.proxy, timeout=self.timeout).text
+            attempts += 1
+
         results = self._parse_html(response)
         if self.max_results is not None and len(results) > self.max_results:
             return results[: self.max_results]
