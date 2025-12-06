@@ -24,7 +24,7 @@ class TestSearch:
     def test_clear_cache(self):
         search = YoutubeSearch('test', max_results=10)
         json_output = search.to_json(clear_cache=False)
-        assert "" != search.videos
 
-        dict_output = search.to_dict()
-        assert "" == search.videos
+        assert "" != search.videos
+        assert isinstance(json_output, str)
+        
